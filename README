@@ -1,0 +1,14 @@
+# Teglon
+
+Is a Clojure and RESTful API for managing, browsing, and searching Maven respositories.
+
+Quick Start:
+
+lein deps
+lein uberjar
+java -jar teglon-standalone.jar repository-directory 
+
+Then visit 
+
+http://localhost:8080/models
+
