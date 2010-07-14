@@ -1,5 +1,5 @@
 (ns teglon.core-test
-  (:use [teglon.core])
+  (:use [teglon core db])
   (:use [clojure.test]))
 
 ;; using a snapshot of clojars.org for testing

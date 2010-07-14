@@ -1,4 +1,5 @@
-(ns ^{:doc "This namespace provides functions for managing, browsing, and querying Maven repositories."
+(ns ^{:doc "This namespace provides functions for managing, browsing,
+ and querying Maven repositories."
        :author "David Edgar Liebke"}
     teglon.core
     (:require [teglon.maven :as maven]

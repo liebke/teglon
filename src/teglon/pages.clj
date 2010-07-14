@@ -2,33 +2,37 @@
        :author "David Edgar Liebke"}
     teglon.pages)
 
-
-(defn index-page [] 
+(defn header [title]
   (str "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>"
        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
        "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
        "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">"
        " <head>"
-       "  <title>Teglon</title>"
+       "  <title>" title "</title>"
        " </head>"
-       " <body>"
-       "  <h1>Teglon</h1>"
+       " <body>"))
+
+(defn footer []
+  (str "</body>"
+       "</html>"))
+
+(defn search-form []
+  (str "<form method=\"GET\" action=\"/search\">"
+       "<input type=\"text\" size=\"30\" maxlength=\"35\" name=\"q\" />"
+       "<input type=\"submit\" value=\"Search\">"
+       "</form>"))
+
+(defn index-page [] 
+  (str (header "Teglon")
+       "  <img src=\"http://incanter.org/images/teglon/teglon.png\" height=\"100\" alt=\"Teglon\" />"
+       (search-form)
        "  <ul>"
        "    <li><a href=\"/models\">Models</a></li>"
        "  </ul>"
-       " </body>"
-       "</html>"))
+       (footer)))
 
 (defn status-404 [uri]
-  (str "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>"
-       "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
-       "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
-       "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">"
-       " <head>"
-       "  <title>404 - Not Found</title>"
-       " </head>"
-       " <body>"
+  (str (header "404 - Not Found")
        "  <h1>404 - Not Found</h1>"
        "<p>No such page: " uri "</p>"
-       " </body>"
-       "</html>"))
+       (footer)))

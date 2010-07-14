@@ -1,4 +1,5 @@
-(ns ^{:doc "This namespace provides Teglon's RESTful API built on the Aleph web server for managing, browsing, and querying Maven repositories."
+(ns ^{:doc "This namespace provides Teglon's RESTful API built on the Aleph web
+ server for managing, browsing, and querying Maven repositories."
        :author "David Edgar Liebke"}
     teglon.web
     (:use [teglon.core :as repo]
@@ -14,11 +15,14 @@
 (defn uri-to-map [uri]
   (let [[path & query] (s/split uri #"\?")
 	path-seq (next (s/split path #"/"))
-	query-seq (when (seq query)
-		    (s/split (first query) #"&"))]
-    {:uri uri
-     :path-seq path-seq
-     :query-seq query-seq}))
+	query-map (when query
+		    (println "Query: " query)
+		    (into {} (map #(s/split % #"=") (-> query first (s/split #"&")))))
+	uri-map {:uri uri
+		 :path-seq path-seq
+		 :query-map query-map}]
+    (println (str "URI Map: " uri-map))
+    uri-map))
 
 (defn index-handler [request uri-map]
   (respond! request
@@ -69,7 +73,7 @@
 	       :body resp})))
 
 (defn search-handler [request uri-map]
-  (let [resp (json-str (repo/search-repo (first (:query-seq uri-map))))]
+  (let [resp (json-str (repo/search-repo (get (:query-map uri-map) "q")))]
     (respond! request
 	      {:status 200
 	       :body resp})))
