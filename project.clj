@@ -1,5 +1,5 @@
 (defproject teglon "1.0.0-SNAPSHOT"
-  :description "Teglon is a Clojure and RESTful API for managing, browsing, and searching Maven respositories."
+  :description "Teglon provides Clojure and RESTful APIs for managing, browsing, and searching Maven repositories."
   :dependencies [[org.clojure/clojure "1.2.0-master-SNAPSHOT"]
                  [org.clojure/clojure-contrib "1.2.0-SNAPSHOT"]
 		 

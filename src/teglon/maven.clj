@@ -4,8 +4,8 @@
   (:require [clojure.java.io :as io])
   (:use [clojure.contrib.condition :only [raise]])
   (:import [org.apache.maven.model Model
-	    Dependency
-	    Contributor]
+	                           Dependency
+	                           Contributor]
            [org.apache.maven.model.io.xpp3 MavenXpp3Writer MavenXpp3Reader]
 	   org.apache.maven.artifact.repository.ArtifactRepositoryFactory
 	   org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout
@@ -16,9 +16,9 @@
 	   org.apache.maven.settings.MavenSettingsBuilder
 	   org.codehaus.plexus.embed.Embedder
 	   [java.io PushbackReader
-	    StringWriter
-	    File
-	    FileWriter]))
+	            StringWriter
+	            File
+	            FileWriter]))
 
 ;; weirdo magic plexus container stuff to make maven work
 ;; TODO: find out if it's safe to just leave these hanging around like
@@ -62,11 +62,9 @@
     (.setArtifactId (:name dj))
     (.setVersion (:version dj))
     ;;(.setClassifier (:classifier dj))
-
     (.setDescription (:description dj))
     (.setUrl (:homepage dj))
     (.setContributors (vec (map make-contributor (:authors dj))))
-
     (.setPackaging "jar")
     (.setDependencies (vec (map make-dependency (:dependencies dj))))))
 
@@ -76,7 +74,6 @@
    :group (.getGroupId model)
    :version (.getVersion model)
    :description (.getDescription model)
-
    :homepage (.getUrl model)
    :authors (vec (map #(.getName %) (.getContributors model)))
    :dependencies (vec (map (fn [d]

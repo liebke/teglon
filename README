@@ -1,12 +1,12 @@
-# Teglon
+<img src="http://incanter.org/images/teglon/teglon.png" height="100" />
 
-Is a Clojure and RESTful API for managing, browsing, and searching Maven respositories.
+<i><strong>Teglon</strong> provides Clojure and RESTful APIs for managing, browsing, and searching Maven repositories.</i>
 
-Quick Start:
+h2. Quick Start:
 
-lein deps
-lein uberjar
-java -jar teglon-standalone.jar repository-directory 
+* @lein deps@
+* @lein uberjar
+* @java -jar teglon-standalone.jar repository-directory@
 
 Then visit 
 
