@@ -5,10 +5,10 @@
 h2. Quick Start:
 
 * @lein deps@
-* @lein uberjar
+* @lein uberjar@
 * @java -jar teglon-standalone.jar repository-directory@
 
 Then visit 
 
-http://localhost:8080/models
+http://localhost:8080
 

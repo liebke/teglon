@@ -1,11 +1,12 @@
-(ns ^{:doc "This namespace provides a RESTful API built on the Aleph web server for managing, browsing, and querying Maven repositories."
+(ns ^{:doc "This namespace provides Teglon's RESTful API built on the Aleph web server for managing, browsing, and querying Maven repositories."
        :author "David Edgar Liebke"}
     teglon.web
-  (:use [teglon.core :as repo]
-	[aleph]
-	[clojure.contrib.json :only (pprint-json json-str)]
-	[clojure.java.io :as io])
-  (:require [clojure.string :as s]))
+    (:use [teglon.core :as repo]
+	  [teglon.pages :as pages]
+	  [aleph]
+	  [clojure.contrib.json :only (pprint-json json-str)]
+	  [clojure.java.io :as io])
+    (:require [clojure.string :as s]))
 
 
 (def *server* (ref nil))
@@ -19,21 +20,17 @@
      :path-seq path-seq
      :query-seq query-seq}))
 
+(defn index-handler [request uri-map]
+  (respond! request
+	    {:status 200
+	     :header {"Content-Type" "text/html"}
+	     :body (pages/index-page)}))
+
 (defn error-page-handler [request uri-map]
   (println (str "File not found 404: " (:uri request)))
   (respond! request
 	   {:status 404
-	    :body (str "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>"
-		       "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
-		       "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
-		       "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">"
-		       " <head>"
-		       "  <title>404 - Not Found</title>"
-		       " </head>"
-		       " <body>"
-		       "  <h1>404 - Not Found</h1>"
-		       " </body>"
-		       "</html>")}))
+	    :body (pages/status-404 (:uri request))}))
 
 (defn directory-handler [request uri-map file]
   (let [dir-contents (json-str (map #(.getName %)
@@ -82,18 +79,23 @@
 		"repo" file-handler})
 
 (defn repo-handler [request]
-  (let [uri-map (uri-to-map (:uri request))
+  (let [uri (:uri request)
+	uri-map (uri-to-map uri)
 	handler (route-map (first (:path-seq uri-map)))]
-    (println (str "Request: " (:uri request)))
-    (if handler
-      (handler request uri-map)
-      (error-page-handler request uri-map))))
+    (println (str "Request: " uri))
+    (cond
+     (= "/" uri)
+       (index-handler request uri-map)
+     handler
+       (handler request uri-map)
+     :else
+       (error-page-handler request uri-map))))
 
 (defn start-server
   ([] (start-server nil))
   ([repo-dir & [port]]
      (let [port (or port 8080)]
-       (println "Initializing repository server...")
+       (println "Initializing Teglon server...")
        (if repo-dir
 	 (repo/init-repo repo-dir)
 	 (repo/init-repo))
@@ -102,7 +104,9 @@
        (println "Web server started."))))
 
 (defn stop-server []
-  (.close @*server*))
+  (println "Stopping Teglon server...")
+  (.close @*server*)
+  (println "Server stopped."))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; 
