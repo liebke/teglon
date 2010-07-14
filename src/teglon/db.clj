@@ -1,4 +1,4 @@
-(ns ^{:doc "This namespace provides functions for managing, browsing, and querying Maven repositories."
+(ns ^{:doc "This namespace provides functions for managing the in-memory database for Maven metadata."
        :author "David Edgar Liebke"}
     teglon.db
     (:require [teglon.maven :as maven]
