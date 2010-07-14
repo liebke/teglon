@@ -11,4 +11,4 @@
 
 		 [aleph "0.1.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.2.1"]]
-  :main teglon.web)
+  :main teglon.main)

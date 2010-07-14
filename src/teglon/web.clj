@@ -5,8 +5,7 @@
 	[aleph]
 	[clojure.contrib.json :only (pprint-json json-str)]
 	[clojure.java.io :as io])
-  (:require [clojure.string :as s])
-  (:gen-class))
+  (:require [clojure.string :as s]))
 
 
 (def *server* (ref nil))
@@ -105,11 +104,6 @@
 (defn stop-server []
   (.close @*server*))
 
-(defn -main
-  ([& [repo-dir & [port] :as args]]
-     (if port
-       (start-server repo-dir (Integer/parseInt port))
-       (apply start-server args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
