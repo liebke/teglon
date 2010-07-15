@@ -33,7 +33,7 @@
   ([group name]
      {:group group :name name}))
 
-(defmulti group-key (fn [obj] (map? obj)))
+(defmulti group-key map?)
 
 (defmethod group-key true
   ([model-map]
