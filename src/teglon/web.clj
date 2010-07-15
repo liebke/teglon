@@ -63,7 +63,7 @@
 	      (= 0 (count args))
 	        (json-str (db/list-all-models))
 	      (= 1 (count args))
-	        (json-str (apply db/list-all-versions-of-model args))
+	        (json-str (apply db/list-models-by-group args))
 	      (= 2 (count args))
 	        (json-str (apply db/list-all-versions-of-model args))
 	      (= 3 (count args))
