@@ -55,3 +55,6 @@
     (is (= 63 (count models)))
     (is (= #{"incanter"} (set (map :group models))))))
 
+(deftest test-get-models-that-depend-on
+  (is (= 51 (count (db/list-models-that-depend-on "incanter")))))
+
