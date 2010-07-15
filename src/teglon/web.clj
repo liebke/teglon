@@ -2,7 +2,8 @@
  server for managing, browsing, and querying Maven repositories."
        :author "David Edgar Liebke"}
     teglon.web
-    (:use [teglon.core :as repo]
+    (:use [teglon.repo :as repo]
+	  [teglon.db :as db]
 	  [teglon.pages :as pages]
 	  [aleph]
 	  [clojure.contrib.json :only (pprint-json json-str)]
@@ -60,20 +61,20 @@
   (let [args (next (:path-seq uri-map))
 	resp (cond
 	      (= 0 (count args))
-	        (json-str (get-all-models))
+	        (json-str (db/list-all-models))
 	      (= 1 (count args))
-	        (json-str (apply repo/get-all-versions-of-model args))
+	        (json-str (apply db/list-all-versions-of-model args))
 	      (= 2 (count args))
-	        (json-str (apply repo/get-all-versions-of-model args))
+	        (json-str (apply db/list-all-versions-of-model args))
 	      (= 3 (count args))
-	        (json-str (apply repo/get-model args)))]
+	        (json-str (apply db/get-model args)))]
     (respond! request
 	      {:status 200
 	       :header {"Content-Type" "text/json"}
 	       :body resp})))
 
 (defn search-handler [request uri-map]
-  (let [resp (json-str (repo/search-repo (get (:query-map uri-map) "q")))]
+  (let [resp (json-str (db/search-repo (get (:query-map uri-map) "q")))]
     (respond! request
 	      {:status 200
 	       :body resp})))

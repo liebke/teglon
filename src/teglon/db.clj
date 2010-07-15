@@ -15,6 +15,10 @@
   (def *cljr-index-by-dependency-group* (ref {}))
   (def *cljr-index-by-dependency-group-name* (ref {})))
 
+(defn db-initialized? []
+  (let [db @*cljr-repo-db*]
+    (and (not (nil? db)) (not (empty? db)))))
+
 (defn- update-db
   ([db-map model-map]
      (let [model-key [(:group model-map) (:name model-map) (:version model-map)]]
@@ -84,6 +88,14 @@
        (doseq [d (:dependencies model-map) :when d]
 	 (dosync (alter *cljr-index-by-dependency-group-name* updater d))))))
 
+(defn clear-db []
+  (do
+    (dosync
+     (ref-set *cljr-repo-db* {})
+     (ref-set *cljr-index-by-group* {})
+     (ref-set *cljr-index-by-group-name* {})
+     (ref-set *cljr-index-by-text* {}))))
+
 (defn update-dependency-indices [model-map]
   (update-dependency-index model-map)
   (update-dependency-group-index model-map)
@@ -99,10 +111,59 @@
   (update-primary-indices model-map)
   (update-dependency-indices model-map))
 
-(defn clear-db []
-  (do
-    (dosync
-     (ref-set *cljr-repo-db* {})
-     (ref-set *cljr-index-by-group* {})
-     (ref-set *cljr-index-by-group-name* {})
-     (ref-set *cljr-index-by-text* {}))))
+
+(defn artifact-id-to-group-name
+  [artifact-id]
+  (if (.contains artifact-id "/")
+    (s/split artifact-id #"/")
+    [artifact-id artifact-id]))
+
+(defn model-id-to-map [[group name version]]
+  {:group group :name name :version version})
+
+(defn search-repo [text]
+  (let [text-keys (filter #(.contains % text) (keys @*cljr-index-by-text*))
+	model-keys (map #(get @*cljr-index-by-text* %) text-keys)]
+    (map model-id-to-map model-keys)))
+
+(defn list-all-models [] (map model-id-to-map (keys @*cljr-repo-db*)))
+
+(defn get-all-models [] (vals @*cljr-repo-db*))
+
+(defn get-model
+  ([artifact-id version]
+     (let [[group name] (artifact-id-to-group-name artifact-id)]
+       (get-model group name version)))
+  ([group name version]
+     (get @*cljr-repo-db* [group name version])))
+
+(defn list-all-versions-of-model
+  ([artifact-id]
+     (let [[group name] (artifact-id-to-group-name artifact-id)]
+       (list-all-versions-of-model group name)))
+  ([group name]
+     (map model-id-to-map (get @*cljr-index-by-group-name* [group name]))))
+
+(defn get-all-versions-of-model
+  ([artifact-id]
+     (let [[group name] (artifact-id-to-group-name artifact-id)]
+       (get-all-versions-of-model group name)))
+  ([group name]
+    (let [model-keys (get @*cljr-index-by-group-name* [group name])]
+      (map #(get @*cljr-repo-db* %) model-keys))))
+
+(defn list-models-by-group [group]
+  (map model-id-to-map (get @*cljr-index-by-group* group)))
+
+(defn get-models-by-group [group]
+  (let [model-keys (get @*cljr-index-by-group* group)]
+    (map #(get @*cljr-repo-db* %) model-keys)))
+
+(defn list-models-that-depend-on
+  ([group name version]
+     (map model-id-to-map (get @*cljr-index-by-dependency* [group name version])))
+  ([group name]
+     (map model-id-to-map (get @*cljr-index-by-dependency-group-name* [group name])))
+  ([group]
+     (map model-id-to-map (get @*cljr-index-by-dependency-group* [group]))))
+

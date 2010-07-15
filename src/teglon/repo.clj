@@ -1,13 +1,15 @@
 (ns ^{:doc "This namespace provides functions for managing, browsing,
  and querying Maven repositories."
        :author "David Edgar Liebke"}
-    teglon.core
+    teglon.repo
     (:require [teglon.maven :as maven]
 	      [teglon.db :as db]
 	      [clojure.java.io :as io]
 	      [clojure.string :as s]))
 
 (def *repository-dir* (ref nil))
+
+(defn sep [] (java.io.File/separator))
 
 (defn repository-dir
   ([] @*repository-dir*)
@@ -22,16 +24,18 @@
     (maven/deploy-model jar-file model repo-url)
     (db/add-model-map-to-db (maven/model-to-map model))))
 
-(defn list-sub-dirs [directory-name]
+(defn- list-sub-dirs [directory-name]
+  "Not currently used."
   (let [dir (io/file directory-name)]
     (filter #(.isDirectory %) (.listFiles dir))))
 
-(defn directory-tree [root-dir-name]
+(defn- directory-tree [root-dir-name]
+  "Not currently used."
   {(.getName (io/file root-dir-name))
    (apply merge (for [dir (list-sub-dirs root-dir-name)]
 		  (directory-tree (.getAbsolutePath dir))))})
 
-(defn find-files-ending-with [root-dir-name suffix]
+(defn- find-files-ending-with [root-dir-name suffix]
   (loop [[file & more-files :as files] (seq (.listFiles (io/file root-dir-name)))
 	 results []]
     (if (seq files)
@@ -53,50 +57,9 @@
   (map #(s/replace (.getAbsolutePath %) #".pom$" "")
        (list-poms-in-repo root-dir-name)))
 
-(defn index-repo
-  ([] (index-repo (repository-dir)))
-  ([repo-dir]
-     (doall
-      (doseq [pom-file (list-poms-in-repo repo-dir)]
-	(-> pom-file maven/read-pom maven/model-to-map db/add-model-map-to-db)))))
-
-(defn search-repo [text]
-  (let [text-keys (filter #(.contains % text) (keys @db/*cljr-index-by-text*))
-	model-keys (map #(get @db/*cljr-index-by-text* %) text-keys)]
-    (map #(get @db/*cljr-repo-db* %) model-keys)))
-
-(defn artifact-id-to-group-name
-  [artifact-id]
-  (if (.contains artifact-id "/")
-    (s/split artifact-id #"/")
-    [artifact-id artifact-id]))
-
-(defn get-all-models [] (vals @db/*cljr-repo-db*))
-
-(defn get-model
-  ([artifact-id version]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
-       (get-model group name version)))
-  ([group name version]
-     (get @db/*cljr-repo-db* [group name version])))
-
-(defn get-all-versions-of-model
-  ([artifact-id]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
-       (get-all-versions-of-model group name)))
-  ([group name]
-    (let [model-keys (get @db/*cljr-index-by-group-name* [group name])]
-      (map #(get @db/*cljr-repo-db* %) model-keys))))
-
-(defn get-models-by-group [group]
-  (let [model-keys (get @db/*cljr-index-by-group* group)]
-    (map #(get @db/*cljr-repo-db* %) model-keys)))
-
-(defn sep [] (java.io.File/separator))
-
 (defn get-project-repo-dir
   ([artifact-id version]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
+     (let [[group name] (db/artifact-id-to-group-name artifact-id)]
        (get-project-repo-dir group name version)))
   ([group name version]
      (let [group-dirs (s/replace group #"\." (sep))
@@ -109,7 +72,7 @@
 
 (defn list-project-repo-contents
   ([artifact-id version]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
+     (let [[group name] (db/artifact-id-to-group-name artifact-id)]
        (list-project-repo-contents group name version)))
   ([group name version]
      (sort-by #(.lastModified %)
@@ -117,7 +80,7 @@
 
 (defn list-project-jars
   ([artifact-id version]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
+     (let [[group name] (db/artifact-id-to-group-name artifact-id)]
        (list-project-jars group name version)))
   ([group name version]
      (filter #(.endsWith (.getName %) ".jar")
@@ -125,11 +88,18 @@
 
 (defn list-project-poms
   ([artifact-id version]
-     (let [[group name] (artifact-id-to-group-name artifact-id)]
+     (let [[group name] (db/artifact-id-to-group-name artifact-id)]
        (list-project-poms group name version)))
   ([group name version]
      (filter #(.endsWith (.getName %) ".pom")
 	     (list-project-repo-contents group name version))))
+
+(defn index-repo
+  ([] (index-repo (repository-dir)))
+  ([repo-dir]
+     (doall
+      (doseq [pom-file (list-poms-in-repo repo-dir)]
+	(-> pom-file maven/read-pom maven/model-to-map db/add-model-map-to-db)))))
 
 (defn init-repo
   ([]
