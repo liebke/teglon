@@ -26,13 +26,36 @@
   ([group name version]
      {:group group :name name :version version}))
 
+(defn group-name-key
+  ([model-map]
+     (let [{:keys [group name]} model-map]
+       {:group group :name name}))
+  ([group name]
+     {:group group :name name}))
+
+(defmulti group-key (fn [obj] (map? obj)))
+
+(defmethod group-key true
+  ([model-map]
+     {:group (:group model-map)}))
+
+(defmethod group-key false
+  ([group]
+     {:group group}))
+
+(defn artifact-id-to-group-name
+  [artifact-id]
+  (if (.contains artifact-id "/")
+    (s/split artifact-id #"/")
+    [artifact-id artifact-id]))
+
 (defn- update-db
   ([db-map model-map]
      (merge db-map {(model-key model-map) model-map})))
 
 (defn- update-group-name-index
   ([index-map model-map]
-     (let [group-name-key [(:group model-map) (:name model-map)]
+     (let [group-name-key (group-name-key model-map)
 	   current-group-name-val (or (get @*cljr-index-by-group-name* group-name-key)
 				      #{})
 	   group-name-val (conj current-group-name-val (model-key model-map))]
@@ -40,7 +63,7 @@
 
 (defn- update-group-index
   ([index-map model-map]
-     (let [group-key (:group model-map)
+     (let [group-key (group-key model-map)
 	   current-group-val (or (get @*cljr-index-by-group* group-key) #{})
 	   group-val (conj current-group-val (model-key model-map))]
        (assoc index-map group-key group-val))))
@@ -59,7 +82,7 @@
 (defn- update-dependency-index
   ([model-map]
      (let [updater (fn [dep-index-map dep-model-map]
-		     (let [dep-group-name-key [(:group dep-model-map) (:name dep-model-map)  (:version dep-model-map)]
+		     (let [dep-group-name-key (model-key dep-model-map)
 			   current-val (or (get @*cljr-index-by-dependency* dep-group-name-key)
 					   #{})
 			   dep-group-name-val (conj current-val (model-key model-map))]
@@ -70,7 +93,7 @@
 (defn- update-dependency-group-index
   ([model-map]
      (let [updater (fn [dep-index-map dep-model-map]
-		     (let [dep-group-key [(:group dep-model-map)]
+		     (let [dep-group-key (group-key dep-model-map)
 			   current-val (or (get @*cljr-index-by-dependency-group* dep-group-key)
 					   #{})
 			   dep-group-val (conj current-val (model-key model-map))]
@@ -81,7 +104,7 @@
 (defn- update-dependency-group-name-index
   ([model-map]
      (let [updater (fn [dep-index-map dep-model-map]
-		     (let [dep-group-name-key [(:group dep-model-map) (:name dep-model-map)]
+		     (let [dep-group-name-key (group-name-key dep-model-map)
 			   current-val (or (get @*cljr-index-by-dependency-group-name* dep-group-name-key)
 					   #{})
 			   dep-group-name-val (conj current-val (model-key model-map))]
@@ -112,13 +135,6 @@
   (update-primary-indices model-map)
   (update-dependency-indices model-map))
 
-
-(defn artifact-id-to-group-name
-  [artifact-id]
-  (if (.contains artifact-id "/")
-    (s/split artifact-id #"/")
-    [artifact-id artifact-id]))
-
 (defn search-repo [text]
   (let [text-keys (filter #(.contains % text) (keys @*cljr-index-by-text*))
 	model-keys (map #(get @*cljr-index-by-text* %) text-keys)]
@@ -140,28 +156,28 @@
      (let [[group name] (artifact-id-to-group-name artifact-id)]
        (list-all-versions-of-model group name)))
   ([group name]
-     (get @*cljr-index-by-group-name* [group name])))
+     (get @*cljr-index-by-group-name* (group-name-key group name))))
 
 (defn get-all-versions-of-model
   ([artifact-id]
      (let [[group name] (artifact-id-to-group-name artifact-id)]
        (get-all-versions-of-model group name)))
   ([group name]
-    (let [model-keys (get @*cljr-index-by-group-name* [group name])]
+    (let [model-keys (get @*cljr-index-by-group-name* (group-name-key group name))]
       (map #(get @*cljr-repo-db* %) model-keys))))
 
 (defn list-models-by-group [group]
-  (get @*cljr-index-by-group* group))
+  (get @*cljr-index-by-group* {:group group}))
 
 (defn get-models-by-group [group]
-  (let [model-keys (get @*cljr-index-by-group* group)]
+  (let [model-keys (get @*cljr-index-by-group* (group-key group))]
     (map #(get @*cljr-repo-db* %) model-keys)))
 
 (defn list-models-that-depend-on
   ([group name version]
      (get @*cljr-index-by-dependency* (model-key group name version)))
   ([group name]
-     (get @*cljr-index-by-dependency-group-name* [group name]))
+     (get @*cljr-index-by-dependency-group-name* (group-name-key group name)))
   ([group]
-     (get @*cljr-index-by-dependency-group* [group])))
+     (get @*cljr-index-by-dependency-group* (group-key group))))
 
