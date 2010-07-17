@@ -8,7 +8,8 @@
                  [org.apache.maven/maven-model "2.2.1"]
                  [org.apache.maven/maven-project "2.2.1"]
                  [org.apache.maven.wagon/wagon-file "1.0-beta-6"]
-
-		 [aleph "0.1.0-SNAPSHOT"]]
+		 
+		 [compojure "0.4.1"]
+		 [ring "0.2.5"]]
   :dev-dependencies [[swank-clojure "1.2.1"]]
   :main teglon.main)

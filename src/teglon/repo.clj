@@ -101,11 +101,14 @@
       (doseq [pom-file (list-poms-in-repo repo-dir)]
 	(-> pom-file maven/read-pom maven/model-to-map db/add-model-map-to-db)))))
 
+(defn default-repo-dir []
+  (str (System/getProperty "user.home")
+		     (sep) ".m2"
+		     (sep) "repository"))
+
 (defn init-repo
   ([]
-     (init-repo (str (System/getProperty "user.home")
-		     (sep) ".m2"
-		     (sep) "repository")))
+     (init-repo (default-repo-dir)))
   ([repo-dir]
      (println "Initializing repository database...")
      (println (str "Setting repository directory to " repo-dir))

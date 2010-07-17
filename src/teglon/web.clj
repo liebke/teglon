@@ -1,126 +1,72 @@
 (ns ^{:doc "This namespace provides Teglon's RESTful API built on the Aleph web
  server for managing, browsing, and querying Maven repositories."
-       :author "David Edgar Liebke"}
-    teglon.web
-    (:use [teglon.repo :as repo]
-	  [teglon.db :as db]
-	  [teglon.pages :as pages]
-	  [aleph]
-	  [clojure.contrib.json :only (pprint-json json-str)]
-	  [clojure.java.io :as io])
-    (:require [clojure.string :as s]))
+      :author "David Edgar Liebke"}
+  teglon.web
+  (:require [teglon.repo :as repo]
+	    [teglon.db :as db]
+	    [teglon.pages :as pages])
+  (:use compojure.core
+	[clojure.contrib.json :only (pprint-json json-str)]
+	[ring.adapter.jetty :only (run-jetty)]
+	[ring.middleware.file :only (wrap-file)]
+	[ring.middleware.file-info :only (wrap-file-info)]))
 
+
+;; (use 'teglon.web)
+;; (start-server "/Users/liebke/Desktop/clojars/clojars.org/repo")
+;; (stop-server)
+
+;; (start-server "/tmp/teglon/repo")
+;; (stop-server)
+;; http://localhost:8080/api/v1/json/tree/show/incanter/incanter-core/1.2.3-SNAPSHOT
+;; http://localhost:8080/api/v1/json/tree/show/incanter/incanter-core
+;; http://localhost:8080/api/v1/json/tree/show/incanter
+;; http://localhost:8080/api/v1/json/tree/show
+;; http://localhost:8080/api/v1/json/tree/search?q=incanter
+
+(defroutes main-routes
+  (GET "/api/v1/json/tree/show/:group/:name/*" [group name & version]
+       (json-str (db/get-model group name (version "*"))))
+  (GET "/api/v1/json/tree/show/:group/:name" [group name]
+       (json-str (db/list-all-versions-of-model group name)))
+  (GET "/api/v1/json/tree/show/:group" [group]
+       (json-str (db/list-models-by-group group)))
+  (GET "/api/v1/json/tree/show" []
+       (json-str (db/list-all-models)))
+  (GET "/api/v1/json/tree/search" [q]
+       (json-str (db/search-repo q)))
+  (GET "/echo" request (prn-str request))
+  (ANY "*" []
+       {:status 404
+	:headers {"Content-Type" "text/html"}
+	:body "<h1>Page not found</h1>"}))
 
 (def *server* (ref nil))
 
-(defn uri-to-map [uri]
-  (let [[path & query] (s/split uri #"\?")
-	path-seq (next (s/split path #"/"))
-	query-map (when query
-		    (println "Query: " query)
-		    (into {} (map #(s/split % #"=") (-> query first (s/split #"&")))))
-	uri-map {:uri uri
-		 :path-seq path-seq
-		 :query-map query-map}]
-    (println (str "URI Map: " uri-map))
-    uri-map))
-
-(defn index-handler [request uri-map]
-  (respond! request
-	    {:status 200
-	     :header {"Content-Type" "text/html"}
-	     :body (pages/index-page)}))
-
-(defn error-page-handler [request uri-map]
-  (println (str "File not found 404: " (:uri request)))
-  (respond! request
-	   {:status 404
-	    :body (pages/status-404 (:uri request))}))
-
-(defn directory-handler [request uri-map file]
-  (let [dir-contents (json-str (map #(.getName %)
-				    (seq (.listFiles file))))]
-    (respond! request {:status 200
-		       :header {"Content-Type" "text/json"}
-		       :body dir-contents})))
-  
-(defn file-handler
-  [request uri-map]
-  (let [args (next (:path-seq uri-map))
-	file (io/file (str "/Users/liebke/Desktop/clojars/clojars.org"
-			   (:uri uri-map)))]
-    (if (.exists file)
-      (if (.isDirectory file)
-	(directory-handler request uri-map file)
-	(respond! request {:status 200
-			   :header {"Content-Type" "application/xml"}
-			   :body file}))
-      (error-page-handler request uri-map))))
-
-(defn models-handler [request uri-map]
-  (let [args (next (:path-seq uri-map))
-	resp (cond
-	      (= 0 (count args))
-	        (json-str (db/list-all-models))
-	      (= 1 (count args))
-	        (json-str (apply db/list-models-by-group args))
-	      (= 2 (count args))
-	        (json-str (apply db/list-all-versions-of-model args))
-	      (= 3 (count args))
-	        (json-str (apply db/get-model args)))]
-    (respond! request
-	      {:status 200
-	       :header {"Content-Type" "text/json"}
-	       :body resp})))
-
-(defn search-handler [request uri-map]
-  (let [resp (json-str (db/search-repo (get (:query-map uri-map) "q")))]
-    (respond! request
-	      {:status 200
-	       :body resp})))
-
-(def route-map {"models" models-handler
-		"search" search-handler
-		"repo" file-handler})
-
-(defn repo-handler [request]
-  (let [uri (:uri request)
-	uri-map (uri-to-map uri)
-	handler (route-map (first (:path-seq uri-map)))]
-    (println (str "Request: " uri))
-    (cond
-     (= "/" uri)
-       (index-handler request uri-map)
-     handler
-       (handler request uri-map)
-     :else
-       (error-page-handler request uri-map))))
+(defn init-web-server
+  ([]
+     (init-web-server (repo/default-repo-dir)))
+  ([repo-dir]
+     (wrap! main-routes
+	    (:file repo-dir)
+	    (:file-info))))
 
 (defn start-server
-  ([] (start-server nil))
+  ([] (start-server (repo/default-repo-dir)))
   ([repo-dir & [port]]
      (let [port (or port 8080)]
        (println "Initializing Teglon server...")
-       (if repo-dir
-	 (repo/init-repo repo-dir)
-	 (repo/init-repo))
+       (repo/init-repo repo-dir)
+       (init-web-server repo-dir)
        (println (str "Starting webserver on port " port "..."))
-       (dosync (ref-set *server* (run-aleph repo-handler {:port port})))
+       (dosync (ref-set *server* (run-jetty #'main-routes
+					    {:port port
+					     :join? false})))
        (println "Web server started."))))
 
 (defn stop-server []
   (println "Stopping Teglon server...")
-  (.close @*server*)
+  (.stop @*server*)
   (println "Server stopped."))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;; 
-
-;; (def server (start-server))
-;; (.close server)
-
-;; http://localhost:8080/models/incanter/incanter/1.2.3-SNAPSHOT
-;; http://localhost:8080/models/incanter/incanter
-;; http://localhost:8080/models/incanter
-;; http://localhost:8080/models
-;; http://localhost:8080/search?haml
