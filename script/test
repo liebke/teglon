@@ -1,0 +1,57 @@
+#!/bin/sh
+
+echo "**************************************************************"
+echo "**show model**"
+echo http://localhost:8080/api/v1/json/model/show/incanter/incanter-core/1.2.3-SNAPSHOT
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/model/show/incanter/incanter-core/1.2.3-SNAPSHOT
+echo
+
+echo "--------------------------------------------------------------"
+echo "**show versions of model**"
+echo http://localhost:8080/api/v1/json/versions/show/incanter/incanter-core
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/versions/show/incanter/incanter-core
+echo
+
+echo "**************************************************************"
+echo "**show models in group**"
+echo http://localhost:8080/api/v1/json/group/show/incanter
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/group/show/incanter
+echo
+
+echo "**************************************************************"
+echo "**show all models**"
+echo http://localhost:8080/api/v1/json/models/show
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/models/show
+echo
+
+echo "**************************************************************"
+echo "**search for model**"
+echo http://localhost:8080/api/v1/json/models/search?q=incanter
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/models/search?q=incanter
+echo
+
+echo "**************************************************************"
+echo "**show models that depend on a given model**"
+echo http://localhost:8080/api/v1/json/children/model/show/incanter/incanter-core/1.2.3-SNAPSHOT
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/children/model/show/incanter/incanter-core/1.2.3-SNAPSHOT
+echo
+
+echo "**************************************************************"
+echo "**show models that depend on all versions of a model**"
+echo http://localhost:8080/api/v1/json/children/versions/show/incanter/incanter-core
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/children/versions/show/incanter/incanter-core
+echo
+
+echo "**************************************************************"
+echo "**show models that depend on all libraries in a group**"
+echo http://localhost:8080/api/v1/json/children/group/show/incanter
+echo "--------------------------------------------------------------"
+curl http://localhost:8080/api/v1/json/children/group/show/incanter
+echo
