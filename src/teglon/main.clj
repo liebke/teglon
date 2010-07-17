@@ -1,8 +1,7 @@
 (ns ^{:doc "This namespace is used to launch the Teglon server"
        :author "David Edgar Liebke"}
     teglon.main
-  (:use [teglon.web :as web]
-	[aleph])
+  (:use [teglon.web :as web])
   (:gen-class))
 
 (defn -main
