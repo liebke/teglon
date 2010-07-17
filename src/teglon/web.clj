@@ -23,6 +23,7 @@
 ;; http://localhost:8080/api/v1/json/tree/show/incanter
 ;; http://localhost:8080/api/v1/json/tree/show
 ;; http://localhost:8080/api/v1/json/tree/search?q=incanter
+;; http://localhost:8080/api/v1/json/tree/children/show/incanter/incanter-core/1.2.3-SNAPSHOT
 
 (defroutes main-routes
   (GET "/api/v1/json/tree/show/:group/:name/*" [group name & version]
@@ -35,6 +36,8 @@
        (json-str (db/list-all-models)))
   (GET "/api/v1/json/tree/search" [q]
        (json-str (db/search-repo q)))
+  (GET "/api/v1/json/tree/children/show/:group/:name/*" [group name & version]
+       (json-str (db/list-models-that-depend-on group name (version "*"))))
   (GET "/echo" request (prn-str request))
   (ANY "*" []
        {:status 404
