@@ -4,20 +4,13 @@
   teglon.web
   (:require [teglon.repo :as repo]
 	    [teglon.web.json :as json]
-	    [teglon.web.pages :as pages]
+	    [teglon.web.html :as html]
 	    [compojure.route :as route])
   (:use compojure.core
 	[ring.adapter.jetty :only (run-jetty)]
 	[ring.middleware.file :only (wrap-file)]
 	[ring.middleware.file-info :only (wrap-file-info)]))
 
-
-;; (use 'teglon.web)
-;; (start-server "/Users/liebke/Desktop/clojars/clojars.org/repo")
-;; (stop-server)
-
-;; (start-server "/tmp/teglon/repo")
-;; (stop-server)
 
 (defn teglon-app [repo-dir]
   (routes
@@ -37,11 +30,19 @@
 	(json/versions-children (group-name "*")))
    (GET (str json/*base-url* "/children/group/show/*") [& group]
 	(json/group-children (group "*")))
+   (GET (str html/*base-url* "/model/show/*") [& artifact-id]
+	(html/model-show (artifact-id "*")))
+   (GET (str html/*base-url* "/models/search") [q]
+	(html/models-search q))
+   (GET (str html/*base-url* "/group/show/*") [& group]
+	(html/group-show (group "*")))
+   (GET (str html/*base-url* "/versions/show/*") [& group-name]
+	(html/versions-show (group-name "*")))
    (GET "/repo*/" request "<h1>Directory without an index file</h1>")
-   (GET "/" request (pages/index-page))
+   (GET "/" request (html/index-page))
    (route/files "/repo" {:root repo-dir})
    (route/files "/static" {:root "public"})
-   (route/not-found (pages/status-404))
+   (route/not-found "<h1>Nothing here, move along.</h1>")
    (GET "/echo" request (prn-str request))))
 
 (def *server* (ref nil))

@@ -11,6 +11,7 @@
 		 ;; needed for teglon.web
 		 [compojure "0.4.1"]
 		 [ring "0.2.5"]
+                 [hiccup "0.4.0-SNAPSHOT"]
 		 ;; needed for teglon.github
 		 [clojure-http-client "1.1.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.2.1"]]

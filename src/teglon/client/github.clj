@@ -1,10 +1,10 @@
 (ns ^{:doc "Client api for github."
       :author "David Edgar Liebke"}
-  teglon.github
+  teglon.client.github
   (:require [clojure.string :as s])
   (:require [teglon.repo :as repo]
 	    [teglon.db :as db]
-	    [teglon.web.client :as client]))
+	    [teglon.client.core :as client]))
 
 
 (def *github-api-base-url* "http://github.com/api/v2/json")
@@ -12,7 +12,9 @@
 (def *github-api-search-url* (str *github-api-repos-url* "/search"))
 
 (defn list-branches [user-name repo-name]
-  (let [url (str *github-api-repos-url* "/show/" user-name "/" repo-name "/branches")]
+  (let [url (str *github-api-repos-url*
+		 "/show/" user-name "/"
+		 repo-name "/branches")]
     (client/json-request url)))
 
 (defn get-sha [user-name repo-name branch-name]
@@ -26,7 +28,7 @@
     (client/json-request url)))
 
 (defn get-local-head-sha
-  ([] (get-local-head-sha ".git"))
+  ([] (get-local-head-sha "."))
   ([project-dir]
      (let [dot-git-dir (str project-dir (repo/sep) ".git" (repo/sep))
 	   head-ref (slurp (str dot-git-dir "HEAD"))
@@ -36,13 +38,20 @@
 					      #":")))]
        (s/trim-newline (slurp (str dot-git-dir (head-location "ref")))))))
 
-(defn get-remote-sha
-  ([origin branch-name] (get-remote-sha ".git" origin branch-name))
-  ([project-dir origin branch-name]
-     (let [dot-git-dir (str ".git" (repo/sep))
-	   remote-sha (slurp (str dot-git-dir
-				  "refs" (repo/sep)
-				  "remotes" (repo/sep)
-				  origin (repo/sep) branch-name))]
-       (s/trim-newline remote-sha))))
+(defn github-local-synced?
+  ([user-name repo-name branch-name]
+     (github-local-synced? "." user-name repo-name branch-name))
+  ([project-dir user-name repo-name branch-name]
+     (= (get-local-head-sha project-dir)
+	(get-sha user-name repo-name branch-name))))
+
+;; (defn get-remote-sha
+;;   ([origin branch-name] (get-remote-sha ".git" origin branch-name))
+;;   ([project-dir origin branch-name]
+;;      (let [dot-git-dir (str ".git" (repo/sep))
+;; 	   remote-sha (slurp (str dot-git-dir
+;; 				  "refs" (repo/sep)
+;; 				  "remotes" (repo/sep)
+;; 				  origin (repo/sep) branch-name))]
+;;        (s/trim-newline remote-sha))))
 
