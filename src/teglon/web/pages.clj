@@ -1,6 +1,6 @@
 (ns ^{:doc "This namespace provides page templates for use by teglon.web."
        :author "David Edgar Liebke"}
-    teglon.pages)
+    teglon.web.pages)
 
 (defn header [title]
   (str "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>"
@@ -17,7 +17,7 @@
        "</html>"))
 
 (defn search-form []
-  (str "<form method=\"GET\" action=\"/search\">"
+  (str "<form method=\"GET\" action=\"/api/v1/json/models/search\">"
        "<input type=\"text\" size=\"30\" maxlength=\"35\" name=\"q\" />"
        "<input type=\"submit\" value=\"Search\">"
        "</form>"))
@@ -27,12 +27,14 @@
        "  <img src=\"http://incanter.org/images/teglon/teglon.png\" height=\"100\" alt=\"Teglon\" />"
        (search-form)
        "  <ul>"
-       "    <li><a href=\"/models\">Models</a></li>"
+       "    <li><a href=\"/api/v1/json/models/show\">Models</a></li>"
        "  </ul>"
        (footer)))
 
-(defn status-404 [uri]
-  (str (header "404 - Not Found")
-       "  <h1>404 - Not Found</h1>"
-       "<p>No such page: " uri "</p>"
-       (footer)))
+(defn status-404
+  ([] (status-404 ""))
+  ([uri]
+     (str (header "404 - Not Found")
+	  "  <h1>404 - Not Found</h1>"
+	  "<p>No such page: " uri "</p>"
+	  (footer))))
