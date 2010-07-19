@@ -49,31 +49,44 @@
 (defn search-form
   ([] (search-form ""))
   ([query]
-     (form-to [:get "/html/models/search"]
-	      (text-field {:value query :size "65"} :q)
-	      (submit-button "Search"))))
+     (html
+      [:p (form-to [:get "/html/models/search"]
+		   (text-field {:value query :size "65"} :q)
+		   (submit-button "Search"))])))
 
 (defn index-page []
   (html [:head
-	 [:title "Teglong"]]
+	 [:title "Teglon"]]
 	[:body
 	 (masthead)
 	 (search-form)
-	 [:a {:href "/api/v1/json/models/show"} "Models"]]))
+	 [:a {:href "/html/models/show"} "Browse groups"]]))
 
-(defn list-children [group name version]
-  (let [children (db/list-models-that-depend-on group name version)]
+(defn list-children [group name]
+  (let [children (into #{} (map #(select-keys % [:group :name :uri])
+				(db/list-models-that-depend-on group name)))]
     (html
      [:ul
       (for [child children]
 	(let [{:keys [group name version]} child]
-	  [:li [:a {:href (model-to-uri child)} (str group "/" name "/" version)]]))])))
+	  [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))])))
+
+(defn list-dependencies [model]
+  (let [deps (:dependencies model)]
+    (html
+     [:ul
+      (for [dep deps]
+	(let [{:keys [group name version]} dep
+	      in-repo? (db/get-model group name version)]
+	  [:li (if in-repo?
+		 [:a {:href (model-to-uri dep)}
+		  (str group "/" name "/" version)]
+		 (str group "/" name "/" version))]))])))
 
 (defn model-show [artifact-id]
   (let [model (apply db/get-model
 		     (util/parse-group-name-version artifact-id))
 	{:keys [group name version description homepage authors]} model
-	deps (:dependencies model)
 	artifact-id (str group "/" name "/" version)]
     (html [:head
 	   [:title (str "Teglon: " artifact-id)]]
@@ -82,25 +95,23 @@
 	   (search-form)
 	   [:h2 [:a {:href (group-to-uri group)} group] " / "
 	    [:a {:href (group-name-to-uri group name)} name] " / " version]
-	   [:p {:id "description"} description]
 	   [:ul
-	    [:li [:strong "authors: "] (apply str (interpose ", " authors))]
-	    [:li [:strong "homepage: "] homepage]
-	    [:li [:strong "Dependencies"]]
-	    [:ul
-	     (for [dep deps]
-	       (let [{:keys [group name version]} dep
-		     in-repo? (db/get-model group name version)]
-		 [:li (if in-repo?
-			[:a {:href (model-to-uri dep)}
-			 (str group "/" name "/" version)]
-			(str group "/" name "/" version))]))]
-	    [:li [:strong "Projects that use this library:"]
-	     (list-children group name version)]]])))
+	    [:li [:strong "Description: "]
+	     description]
+	    [:li [:strong "Authors: "]
+	     (apply str (interpose ", " authors))]
+	    [:li [:strong "Homepage: "]
+	     (when homepage [:a {:href homepage} homepage])]
+	    [:li [:strong "Dependencies:"]
+	     (list-dependencies model)]
+	    [:li [:strong "Projects in repo that use this library:"]
+	     (list-children group name)]]])))
 
 (defn models-search [query]
-  (let [results (map add-uri-to-model
-		     (db/search-repo query))]
+  (let [results (db/sort-models
+		 (into #{} (map #(select-keys % [:group :name :uri])
+				(map (partial add-uri-to-model group-name-to-uri)
+				     (db/search-repo query)))))]
     (html [:head
 	   [:title "Teglon Search Results"]]
 	  [:body
@@ -110,13 +121,16 @@
 	     [:h2 "No results"]
 	     [:ul
 	     (for [result results]
-	       (let [{:keys [group name version uri description]} result]
-		 [:li [:a {:href uri} (str group "/" name "/" version)]]))])])))
+	       (let [{:keys [group name version uri description score]} result]
+		 [:li [:a {:href uri}
+		       (str group "/" name "/" version)]
+		  [:span {:id "score"} "   (score " score ")"]]))])])))
 
 (defn- list-artifacts [group artifacts]
   (let [artifacts (into #{} (map #(select-keys % [:group :name :uri]) artifacts))]
     (html
      [:h2 group]
+     [:strong "Libraries:"]
      [:ul
       (for [artifact artifacts]
 	(let [{:keys [group name version uri]} artifact]
@@ -137,6 +151,7 @@
 (defn- list-versions [group name versions]
   (html
    [:h2 [:a {:href (group-to-uri group)} group] " / " name]
+   [:strong "Versions:"]
    [:ul
     (for [version versions]
       (let [{:keys [group name version uri]} version]
@@ -155,21 +170,22 @@
 	     (list-versions group name versions)
 	     [:h2 "Artifacts not found"])])))
 
-;; (defn models-children [artifact-id]
-;;   (json-str (map add-uri-to-model
-;; 		 (apply db/list-models-that-depend-on
-;; 		    (parse-group-name-version artifact-id)))))
 
-;; (defn versions-children [group-name]
-;;   (json-str (map add-uri-to-model
-;; 		 (apply db/list-models-that-depend-on
-;; 		    (parse-group-name group-name)))))
+(defn- list-groups [groups]
+  (html
+   [:strong "Groups:"]
+   [:ul
+    (for [group groups]
+      [:li [:a {:href (group-to-uri group)} group]])]))
 
-;; (defn group-children [group]
-;;   (json-str (map add-uri-to-model
-;; 		 (db/list-models-that-depend-on group))))
-
-;; (defn models-show []
-;;   (json-str (map add-uri-to-model
-;; 		 (db/list-all-models))))
+(defn groups-show []
+  (let [groups (sort (map :group (keys @db/*teglon-index-by-group*)))]
+    (html [:head
+	   [:title (str "Teglon: Groups")]]
+	  [:body
+	   (masthead)
+	   (search-form)
+	   (if (seq groups)
+	     (list-groups groups)
+	     [:h2 "No groups found"])])))
 

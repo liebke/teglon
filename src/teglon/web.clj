@@ -38,6 +38,8 @@
 	(html/group-show (group "*")))
    (GET (str html/*base-url* "/versions/show/*") [& group-name]
 	(html/versions-show (group-name "*")))
+   (GET (str html/*base-url* "/models/show") []
+	(html/groups-show))
    (GET "/repo*/" request "<h1>Directory without an index file</h1>")
    (GET "/" request (html/index-page))
    (route/files "/repo" {:root repo-dir})
