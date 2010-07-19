@@ -40,7 +40,11 @@
 	(html/versions-show (group-name "*")))
    (GET (str html/*base-url* "/models/show") []
 	(html/groups-show))
-   (GET "/repo*/" request "<h1>Directory without an index file</h1>")
+   (GET "/repo" request {:status 302 :headers {"Location" "/repo/"}})
+   (GET "/repo/" []
+	(html/repo-directory-listing))
+   (GET "/repo/*/" [& relative-path]
+	(html/repo-directory-listing (str (relative-path "*") "/")))
    (GET "/" request (html/index-page))
    (route/files "/repo" {:root repo-dir})
    (route/files "/static" {:root "public"})

@@ -2,7 +2,9 @@
       :author "David Edgar Liebke"}
   teglon.web.html
   (:require [teglon.db :as db]
-	    [teglon.web.util :as util])
+	    [teglon.repo :as repo]
+	    [teglon.web.util :as util]
+	    [clojure.java.io :as io])
   (:use compojure.core
 	[hiccup core form-helpers]
 	[clojure.contrib.json :only (json-str)]))
@@ -40,10 +42,16 @@
   ([uri-fn model]
      (assoc model :uri (uri-fn model))))
 
-(defn masthead []
+(defn main-masthead []
   [:a {:href "/"}
    [:img {:src "http://incanter.org/images/teglon/teglon.png"
 	  :height "100"
+	  :alt "Teglon"}]])
+
+(defn masthead []
+  [:a {:href "/"}
+   [:img {:src "http://incanter.org/images/teglon/teglon.png"
+	  :height "50"
 	  :alt "Teglon"}]])
 
 (defn search-form
@@ -58,36 +66,59 @@
   (html [:head
 	 [:title "Teglon"]]
 	[:body
-	 (masthead)
+	 (main-masthead)
 	 (search-form)
-	 [:a {:href "/html/models/show"} "Browse groups"]]))
+	 [:a {:href "/html/models/show"} "Browse Libraries"]]))
 
 (defn list-children [group name]
   (let [children (into #{} (map #(select-keys % [:group :name :uri])
 				(db/list-models-that-depend-on group name)))]
     (html
      [:ul
-      (for [child children]
-	(let [{:keys [group name version]} child]
-	  [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))])))
+      (if (seq children)
+	(for [child children]
+	 (let [{:keys [group name version]} child]
+	   [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))
+	[:li "None"])])))
 
 (defn list-dependencies [model]
   (let [deps (:dependencies model)]
     (html
      [:ul
-      (for [dep deps]
-	(let [{:keys [group name version]} dep
-	      in-repo? (db/get-model group name version)]
-	  [:li (if in-repo?
-		 [:a {:href (model-to-uri dep)}
-		  (str group "/" name "/" version)]
-		 (str group "/" name "/" version))]))])))
+      (if (seq deps)
+	(for [dep deps]
+	 (let [{:keys [group name version]} dep
+	       in-repo? (db/get-model group name version)]
+	   [:li (if in-repo?
+		  [:a {:href (model-to-uri dep)}
+		   (str group "/" name "/" version)]
+		  (str group "/" name "/" version))]))
+	[:li "None"])])))
+
+(defn list-pom-files [model project-dir]
+  (let [{:keys [group name version]} model]
+    (html
+    [:ul
+     (for [f (reverse (repo/list-project-poms group name version))]
+       (let [file-name (.getName f)]
+	 [:li [:a {:href (str project-dir "/" file-name)} file-name]]))])))
+
+(defn list-jar-files [model project-dir]
+  (let [{:keys [group name version]} model]
+    [:ul
+     (for [f (reverse (repo/list-project-jars group name version))]
+       (let [file-name (.getName f)]
+	 [:li [:a {:href (str project-dir "/" file-name)} file-name]]))]))
 
 (defn model-show [artifact-id]
   (let [model (apply db/get-model
 		     (util/parse-group-name-version artifact-id))
 	{:keys [group name version description homepage authors]} model
-	artifact-id (str group "/" name "/" version)]
+	artifact-id (str group "/" name "/" version)
+	project-dir (str "/repo/"
+			 (repo/get-project-repo-relative-dir group
+							     name
+							     version))]
     (html [:head
 	   [:title (str "Teglon: " artifact-id)]]
 	  [:body
@@ -99,13 +130,18 @@
 	    [:li [:strong "Description: "]
 	     description]
 	    [:li [:strong "Authors: "]
-	     (apply str (interpose ", " authors))]
+	     (if (seq authors)
+	       (apply str (interpose ", " authors))
+	       "N/A")]
 	    [:li [:strong "Homepage: "]
-	     (when homepage [:a {:href homepage} homepage])]
-	    [:li [:strong "Dependencies:"]
-	     (list-dependencies model)]
+	     (if homepage
+	       [:a {:href homepage} homepage]
+	       "N/A")]
+	    [:li [:strong "Dependencies:"] (list-dependencies model)]
 	    [:li [:strong "Projects in repo that use this library:"]
-	     (list-children group name)]]])))
+	     (list-children group name)]
+	    [:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
+	    [:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]])))
 
 (defn models-search [query]
   (let [results (db/sort-models
@@ -188,4 +224,27 @@
 	   (if (seq groups)
 	     (list-groups groups)
 	     [:h2 "No groups found"])])))
+
+(defn repo-directory-listing
+  ([]
+     (repo-directory-listing nil))
+  ([relative-path]
+     (let [directory-path (str (repo/repository-dir) "/" relative-path)
+	   directory-file (io/file directory-path)
+	   parent-dir (let [p (when relative-path (.getParent (io/file relative-path)))]
+			(when p (str p "/")))]
+       (html [:head
+	      [:title "Teglon: " relative-path]]
+	     [:body
+	      (masthead)
+	      (search-form)
+	      [:h2 "repo/" relative-path]
+	      [:ul
+	       (when relative-path
+		 [:li [:a {:href (str "/repo/" parent-dir)} (str ".. /")]])
+	       (for [f (.listFiles directory-file)]
+		 (let [f-name (.getName f)]
+		   (if (.isDirectory f)
+		     [:li [:a {:href (str f-name "/")} (str f-name " /")]]
+		     [:li [:a {:href f-name} f-name]])))]]))))
 

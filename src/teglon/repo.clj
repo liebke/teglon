@@ -70,6 +70,18 @@
 			 version)]
        (io/file dir-name))))
 
+(defn get-project-repo-relative-dir
+  ([artifact-id version]
+     (let [[group name] (db/artifact-id-to-group-name artifact-id)]
+       (get-project-repo-relative-dir group name version)))
+  ([group name version]
+     (let [group-dirs (s/replace group #"\." (sep))
+	   name-dirs (s/replace name #"\." (sep))
+	   dir-name (str group-dirs (sep)
+			 name-dirs (sep)
+			 version)]
+       (io/file dir-name))))
+
 (defn list-project-repo-contents
   ([artifact-id version]
      (let [[group name] (db/artifact-id-to-group-name artifact-id)]
