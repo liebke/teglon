@@ -77,8 +77,8 @@
      [:ul
       (if (seq children)
 	(for [child children]
-	 (let [{:keys [group name version]} child]
-	   [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))
+	  (let [{:keys [group name version]} child]
+	    [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))
 	[:li "None"])])))
 
 (defn list-dependencies [model]
@@ -126,6 +126,7 @@
 	   (search-form)
 	   [:h2 [:a {:href (group-to-uri group)} group] " / "
 	    [:a {:href (group-name-to-uri group name)} name] " / " version]
+	   [:h3 "Library details"]
 	   [:ul
 	    [:li [:strong "Description: "]
 	     description]
@@ -139,7 +140,10 @@
 	       "N/A")]
 	    [:li [:strong "Dependencies:"] (list-dependencies model)]
 	    [:li [:strong "Projects in repo that use this library:"]
-	     (list-children group name)]
+	     (list-children group name)]]
+	   [:h3 [:a {:href (str "/repo/" (repo/get-project-repo-relative-dir group name version) "/")}
+		     "Repository Contents"]]
+	   [:ul
 	    [:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
 	    [:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]])))
 
@@ -247,4 +251,14 @@
 		   (if (.isDirectory f)
 		     [:li [:a {:href (str f-name "/")} (str f-name " /")]]
 		     [:li [:a {:href f-name} f-name]])))]]))))
+
+(defn missing-file [request]
+  (html
+   [:head
+    [:title "Teglon: No Such File"]
+    [:body
+     (masthead)
+     (search-form)
+     [:h2 "Status 404"]
+     [:strong "The file you are looking for cannot be found: "] (request :uri)]]))
 

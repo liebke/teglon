@@ -48,7 +48,7 @@
    (GET "/" request (html/index-page))
    (route/files "/repo" {:root repo-dir})
    (route/files "/static" {:root "public"})
-   (route/not-found "<h1>Nothing here, move along.</h1>")
+   (ANY "*" request {:status 404 :body (html/missing-file request)})
    (GET "/echo" request (prn-str request))))
 
 (def *server* (ref nil))
