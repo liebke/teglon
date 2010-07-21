@@ -7,6 +7,7 @@
 	    [clojure.java.io :as io])
   (:use compojure.core
 	[hiccup core form-helpers]
+	[hiccup.page-helpers :only (include-css)]
 	[clojure.contrib.json :only (json-str)]))
 
 
@@ -14,6 +15,7 @@
 (def *show-model-html-url* (str *base-url* "/model/show"))
 (def *show-group-html-url* (str *base-url* "/group/show"))
 (def *show-group-name-html-url* (str *base-url* "/versions/show"))
+(def stylesheet "/static/teglon.css")
 
 (defn model-to-uri
   ([model]
@@ -42,33 +44,40 @@
   ([uri-fn model]
      (assoc model :uri (uri-fn model))))
 
-(defn main-masthead []
-  [:a {:href "/"}
-   [:img {:src "http://incanter.org/images/teglon/teglon.png"
-	  :height "100"
-	  :alt "Teglon"}]])
-
-(defn masthead []
-  [:a {:href "/"}
-   [:img {:src "http://incanter.org/images/teglon/teglon.png"
-	  :height "50"
-	  :alt "Teglon"}]])
-
 (defn search-form
   ([] (search-form ""))
   ([query]
      (html
-      [:p (form-to [:get "/html/models/search"]
-		   (text-field {:value query :size "65"} :q)
-		   (submit-button "Search"))])))
+      [:p 
+       (form-to [:get "/html/models/search"]
+		(text-field {:value query :size "75"} :q)
+		(submit-button "Search"))])))
+
+(defn main-masthead []
+  [:div {:class "main-masthead"}
+   [:a {:href "/"}
+    [:img {:src "http://incanter.org/images/teglon/teglon.png"
+	   :height "100"
+	   :alt "Teglon"}]]
+   (search-form)
+   [:a {:href "/html/models/show"} "Browse Libraries"]])
+
+(defn masthead
+  ([] (masthead ""))
+  ([query]
+     [:div {:class "heading"}
+      [:a {:href "/"}
+       [:img {:src "http://incanter.org/images/teglon/teglon.png"
+	      :height "60"
+	      :alt "Teglon"}]]
+      (search-form)]))
 
 (defn index-page []
   (html [:head
 	 [:title "Teglon"]]
+	(include-css stylesheet)
 	[:body
-	 (main-masthead)
-	 (search-form)
-	 [:a {:href "/html/models/show"} "Browse Libraries"]]))
+	 (main-masthead)]))
 
 (defn list-children [group name]
   (let [children (into #{} (map #(select-keys % [:group :name :uri])
@@ -120,32 +129,34 @@
 							     name
 							     version))]
     (html [:head
-	   [:title (str "Teglon: " artifact-id)]]
+	   [:title (str "Teglon: " artifact-id)]
+	   (include-css stylesheet)]
 	  [:body
 	   (masthead)
-	   (search-form)
 	   [:h2 [:a {:href (group-to-uri group)} group] " / "
 	    [:a {:href (group-name-to-uri group name)} name] " / " version]
-	   [:h3 "Library details"]
-	   [:ul
-	    [:li [:strong "Description: "]
-	     description]
-	    [:li [:strong "Authors: "]
-	     (if (seq authors)
-	       (apply str (interpose ", " authors))
-	       "N/A")]
-	    [:li [:strong "Homepage: "]
-	     (if homepage
-	       [:a {:href homepage} homepage]
-	       "N/A")]
-	    [:li [:strong "Dependencies:"] (list-dependencies model)]
-	    [:li [:strong "Projects in repo that use this library:"]
-	     (list-children group name)]]
-	   [:h3 [:a {:href (str "/repo/" (repo/get-project-repo-relative-dir group name version) "/")}
-		     "Repository Contents"]]
-	   [:ul
-	    [:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
-	    [:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]])))
+	   [:div {:class "library-details"}
+	    [:h3 "Library Details"]
+	    [:ul
+	     [:li [:strong "Description: "]
+	      (if description description "N/A")]
+	     [:li [:strong "Authors: "]
+	      (if (seq authors)
+		(apply str (interpose ", " authors))
+		"N/A")]
+	     [:li [:strong "Homepage: "]
+	      (if homepage
+		[:a {:href homepage} homepage]
+		"N/A")]
+	     [:li [:strong "Dependencies:"] (list-dependencies model)]
+	     [:li [:strong "Projects in repo that use this library:"]
+	      (list-children group name)]]]
+	   [:div {:class "repo-contents"}
+	    [:h3 [:a {:href (str "/repo/" (repo/get-project-repo-relative-dir group name version) "/")}
+		  "Repository Contents"]]
+	    [:ul
+	     [:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
+	     [:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]]])))
 
 (defn models-search [query]
   (let [results (db/sort-models
@@ -153,10 +164,10 @@
 				(map (partial add-uri-to-model group-name-to-uri)
 				     (db/search-repo query)))))]
     (html [:head
-	   [:title "Teglon Search Results"]]
+	   [:title "Teglon Search Results"]
+	   (include-css stylesheet)]
 	  [:body
-	   (masthead)
-	   (search-form query)
+	   (masthead query)
 	   (if-not (seq results)
 	     [:h2 "No results"]
 	     [:ul
@@ -170,7 +181,7 @@
   (let [artifacts (into #{} (map #(select-keys % [:group :name :uri]) artifacts))]
     (html
      [:h2 group]
-     [:strong "Libraries:"]
+     [:h3 "Libraries:"]
      [:ul
       (for [artifact artifacts]
 	(let [{:keys [group name version uri]} artifact]
@@ -180,10 +191,10 @@
   (let [artifacts (map (partial add-uri-to-model group-name-to-uri)
 		       (db/list-models-by-group group))]
     (html [:head
-	   [:title (str "Teglon: " group)]]
+	   [:title (str "Teglon: " group)]
+	   (include-css stylesheet)]
 	  [:body
 	   (masthead)
-	   (search-form)
 	   (if (seq artifacts)
 	     (list-artifacts group artifacts)
 	     [:h2 "Group not found"])])))
@@ -191,9 +202,9 @@
 (defn- list-versions [group name versions]
   (html
    [:h2 [:a {:href (group-to-uri group)} group] " / " name]
-   [:strong "Versions:"]
+   [:h3 "Versions:"]
    [:ul
-    (for [version versions]
+    (for [version versions :when version]
       (let [{:keys [group name version uri]} version]
 	[:li [:a {:href uri} version]]))]))
 
@@ -202,10 +213,10 @@
 	versions (map add-uri-to-model
 		      (db/list-all-versions-of-model group name))]
     (html [:head
-	   [:title (str "Teglon: " group "/" name)]]
+	   [:title (str "Teglon: " group "/" name)]
+	   (include-css stylesheet)]
 	  [:body
 	   (masthead)
-	   (search-form)
 	   (if (seq versions)
 	     (list-versions group name versions)
 	     [:h2 "Artifacts not found"])])))
@@ -213,18 +224,18 @@
 
 (defn- list-groups [groups]
   (html
-   [:strong "Groups:"]
+   [:h3 "Groups:"]
    [:ul
-    (for [group groups]
+    (for [group groups :when group]
       [:li [:a {:href (group-to-uri group)} group]])]))
 
 (defn groups-show []
   (let [groups (sort (map :group (keys @db/*teglon-index-by-group*)))]
     (html [:head
-	   [:title (str "Teglon: Groups")]]
+	   [:title (str "Teglon: Groups")]
+	   (include-css stylesheet)]
 	  [:body
 	   (masthead)
-	   (search-form)
 	   (if (seq groups)
 	     (list-groups groups)
 	     [:h2 "No groups found"])])))
@@ -238,10 +249,10 @@
 	   parent-dir (let [p (when relative-path (.getParent (io/file relative-path)))]
 			(when p (str p "/")))]
        (html [:head
-	      [:title "Teglon: " relative-path]]
+	      [:title "Teglon: " relative-path]
+	      (include-css stylesheet)]
 	     [:body
 	      (masthead)
-	      (search-form)
 	      [:h2 "repo/" relative-path]
 	      [:ul
 	       (when relative-path
@@ -256,9 +267,9 @@
   (html
    [:head
     [:title "Teglon: No Such File"]
-    [:body
-     (masthead)
-     (search-form)
-     [:h2 "Status 404"]
-     [:strong "The file you are looking for cannot be found: "] (request :uri)]]))
+    (include-css stylesheet)]
+   [:body
+    (masthead)
+    [:h2 "Status 404"]
+    [:strong "The file you are looking for cannot be found: "] (request :uri)]))
 

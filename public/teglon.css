@@ -1,0 +1,115 @@
+/*
+ * simple-and-clean.css - CSS2 style sheet
+ */
+
+body {
+    font: 90% Verdana, Helvetica, Arial, sans-serif;
+    background: White;
+    color: Gray;
+    margin: 1em;
+    padding: 1em;
+}
+
+.heading {
+    padding-left: 2em;
+}
+
+.library-details {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+
+.repo-contents {
+    padding-top: .5em;
+    padding-bottom: 1em;
+}
+
+.main-masthead {
+    padding: 1em;
+    text-align: center;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: CornflowerBlue;
+    clear: left;
+    font: 100% Verdana, Helvetica, Arial, sans-serif;
+    margin: 20;
+    padding-left: 0.5em;
+} 
+
+h1 {
+    font-size: 190%;
+    border-bottom: none;
+    text-align: right;
+}
+    
+h2 {
+    font-size: 180%;
+}
+
+h3 {
+    font-size: 170%;
+    padding-left: 1.0em;
+}
+
+h4 {
+    font-size: 140%;
+    padding-left: 1.5em;
+}
+
+p {
+    text-align: justify;
+    line-height: 1.5em;
+}
+
+a {
+    text-decoration: underline;
+    color: CornflowerBlue;
+}
+
+h2 a {
+    text-decoration: underline;
+    color: RoyalBlue;
+}
+
+h3 a {
+    text-decoration: underline;
+    color: CornflowerBlue;
+}
+
+strong {
+    font-weight: bold;
+    color: RoyalBlue;
+}
+
+code,
+blockquote,
+pre {
+    font-size: 120%;
+    padding: 1em;
+    border: 1px solid Black;
+    color: Black;
+    background-color: #dedede;
+}
+
+#gallerycomment {
+    text-align: center;
+}
+
+#rss-desc {
+    text-align: right;
+    font-size: smaller;
+}
+
+
+li {
+    margin: .5em;
+}
+
+div .item-desc {
+    margin-bottom: 1em;
+}
+
+.item-title {
+    margin-bottom: 0.5em;
+}
