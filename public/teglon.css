@@ -3,30 +3,38 @@
  */
 
 body {
-    font: 90% Verdana, Helvetica, Arial, sans-serif;
+    font: normal normal normal 15px/1.5 'Helvetica Neue', Arial, 'Liberation Sans', FreeSans, sans-serif;
     background: White;
     color: Gray;
     margin: 1em;
     padding: 1em;
 }
 
-.heading {
+.masthead {
     padding-left: 2em;
-}
-
-.library-details {
-    padding-top: 1em;
-    padding-bottom: 1em;
-}
-
-.repo-contents {
     padding-top: .5em;
+    padding-bottom: 0.25em;
+}
+
+.masthead-logo {
+    height: 70px;
     padding-bottom: 1em;
+}
+
+.library-details, .repo-contents, .libraries, .groups, .versions {
+    padding-top: 0.15em;
+    padding-bottom: 0em;
 }
 
 .main-masthead {
     padding: 1em;
     text-align: center;
+}
+
+.main-masthead-logo {
+    height: 110px;
+    padding-right: 2.5em;
+    padding-bottom: 1em;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -40,7 +48,8 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
     font-size: 190%;
     border-bottom: none;
-    text-align: right;
+    text-align: left;
+    color: LightSteelBlue;
 }
     
 h2 {
@@ -48,8 +57,8 @@ h2 {
 }
 
 h3 {
-    font-size: 170%;
-    padding-left: 1.0em;
+    font-size: 155%;
+    color: SlateGray;
 }
 
 h4 {
@@ -67,14 +76,19 @@ a {
     color: CornflowerBlue;
 }
 
-h2 a {
+h1 a {
     text-decoration: underline;
     color: RoyalBlue;
 }
 
 h3 a {
     text-decoration: underline;
-    color: CornflowerBlue;
+    color: SlateGray;
+}
+
+.dir-list {
+    color: LightSteelBlue;
+    font-size: 155%
 }
 
 strong {
@@ -101,9 +115,12 @@ pre {
     font-size: smaller;
 }
 
+ul {
+    list-style-type: none;
+}
 
 li {
-    margin: .5em;
+    margin: .25em;
 }
 
 div .item-desc {

@@ -44,32 +44,40 @@
   ([uri-fn model]
      (assoc model :uri (uri-fn model))))
 
-(defn search-form
-  ([] (search-form ""))
+(defn main-search-form
+  ([] (main-search-form ""))
   ([query]
      (html
       [:p 
        (form-to [:get "/html/models/search"]
-		(text-field {:value query :size "75"} :q)
+		(text-field {:value query :size "85"} :q)
 		(submit-button "Search"))])))
+
+(defn search-form
+  ([] (search-form ""))
+  ([query]
+     (html
+      (form-to [:get "/html/models/search"]
+	       (text-field {:value query :size "75"} :q)
+	       (submit-button "Search")))))
 
 (defn main-masthead []
   [:div {:class "main-masthead"}
    [:a {:href "/"}
     [:img {:src "http://incanter.org/images/teglon/teglon.png"
-	   :height "100"
-	   :alt "Teglon"}]]
-   (search-form)
+	   :alt "Teglon"
+	   :class "main-masthead-logo"}]]
+   (main-search-form)
    [:a {:href "/html/models/show"} "Browse Libraries"]])
 
 (defn masthead
   ([] (masthead ""))
   ([query]
-     [:div {:class "heading"}
+     [:div {:class "masthead"}
       [:a {:href "/"}
        [:img {:src "http://incanter.org/images/teglon/teglon.png"
-	      :height "60"
-	      :alt "Teglon"}]]
+	      :alt "Teglon"
+	      :class "masthead-logo"}]]
       (search-form)]))
 
 (defn index-page []
@@ -83,26 +91,26 @@
   (let [children (into #{} (map #(select-keys % [:group :name :uri])
 				(db/list-models-that-depend-on group name)))]
     (html
-     [:ul
-      (if (seq children)
+     (if (seq children)
+       [:ul
 	(for [child children]
 	  (let [{:keys [group name version]} child]
-	    [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))
-	[:li "None"])])))
+	    [:li [:a {:href (group-name-to-uri child)} (str group "/" name)]]))]
+       " N/A"))))
 
 (defn list-dependencies [model]
   (let [deps (:dependencies model)]
     (html
-     [:ul
-      (if (seq deps)
+     (if (seq deps)
+       [:ul
 	(for [dep deps]
-	 (let [{:keys [group name version]} dep
-	       in-repo? (db/get-model group name version)]
-	   [:li (if in-repo?
-		  [:a {:href (model-to-uri dep)}
-		   (str group "/" name "/" version)]
-		  (str group "/" name "/" version))]))
-	[:li "None"])])))
+	  (let [{:keys [group name version]} dep
+		in-repo? (db/get-model group name version)]
+	    [:li (if in-repo?
+		   [:a {:href (model-to-uri dep)}
+		    (str group "/" name "/" version)]
+		   (str group "/" name "/" version))]))]
+       " N/A"))))
 
 (defn list-pom-files [model project-dir]
   (let [{:keys [group name version]} model]
@@ -133,7 +141,7 @@
 	   (include-css stylesheet)]
 	  [:body
 	   (masthead)
-	   [:h2 [:a {:href (group-to-uri group)} group] " / "
+	   [:h1 "/ " [:a {:href (group-to-uri group)} group] " / "
 	    [:a {:href (group-name-to-uri group name)} name] " / " version]
 	   [:div {:class "library-details"}
 	    [:h3 "Library Details"]
@@ -180,12 +188,13 @@
 (defn- list-artifacts [group artifacts]
   (let [artifacts (into #{} (map #(select-keys % [:group :name :uri]) artifacts))]
     (html
-     [:h2 group]
-     [:h3 "Libraries:"]
-     [:ul
-      (for [artifact artifacts]
-	(let [{:keys [group name version uri]} artifact]
-	  [:li [:a {:href uri} name]]))])))
+     [:h1 "/ " group]
+     [:div {:class "libraries"}
+      [:h3 "Libraries"]
+      [:ul
+       (for [artifact artifacts]
+	 (let [{:keys [group name version uri]} artifact]
+	   [:li [:a {:href uri} name]]))]])))
 
 (defn group-show [group]
   (let [artifacts (map (partial add-uri-to-model group-name-to-uri)
@@ -201,12 +210,13 @@
 
 (defn- list-versions [group name versions]
   (html
-   [:h2 [:a {:href (group-to-uri group)} group] " / " name]
-   [:h3 "Versions:"]
-   [:ul
-    (for [version versions :when version]
-      (let [{:keys [group name version uri]} version]
-	[:li [:a {:href uri} version]]))]))
+   [:h1 "/ " [:a {:href (group-to-uri group)} group] " / " name]
+   [:div {:class "versions"}
+    [:h3 "Versions"]
+    [:ul
+     (for [version versions :when version]
+       (let [{:keys [group name version uri]} version]
+	 [:li [:a {:href uri} version]]))]]))
 
 (defn versions-show [group-name]
   (let [[group name] (util/parse-group-name group-name)
@@ -224,10 +234,12 @@
 
 (defn- list-groups [groups]
   (html
-   [:h3 "Groups:"]
-   [:ul
-    (for [group groups :when group]
-      [:li [:a {:href (group-to-uri group)} group]])]))
+   [:h1 "/ "]
+   [:div {:class "groups"}
+    [:h3 "Groups"]
+    [:ul
+     (for [group groups :when group]
+       [:li [:a {:href (group-to-uri group)} group]])]]))
 
 (defn groups-show []
   (let [groups (sort (map :group (keys @db/*teglon-index-by-group*)))]
@@ -253,7 +265,8 @@
 	      (include-css stylesheet)]
 	     [:body
 	      (masthead)
-	      [:h2 "repo/" relative-path]
+	      [:h1 {:class "dir-list"}
+	       (if relative-path "/repo/" "/repo") relative-path]
 	      [:ul
 	       (when relative-path
 		 [:li [:a {:href (str "/repo/" parent-dir)} (str ".. /")]])
