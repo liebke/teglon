@@ -1,7 +1,7 @@
 (defproject teglon "1.0.0-SNAPSHOT"
   :description "Teglon provides Clojure and RESTful APIs for managing, browsing, and searching Maven repositories."
-  :dependencies [[org.clojure/clojure "1.2.0-master-SNAPSHOT"]
-                 [org.clojure/clojure-contrib "1.2.0-SNAPSHOT"]
+  :dependencies [[org.clojure/clojure "1.2.0-beta1"]
+                 [org.clojure/clojure-contrib "1.2.0-beta1"]
 		 ;; needed for teglon.repo
 		 [org.apache.maven/maven-ant-tasks "2.0.10"]
                  [org.apache.maven/maven-artifact-manager "2.2.1"]
@@ -11,7 +11,7 @@
 		 ;; needed for teglon.web
 		 [compojure "0.4.1"]
 		 [ring "0.2.5"]
-                 [hiccup "0.4.0-SNAPSHOT"]
+                 [hiccup "0.2.6"]
 		 ;; needed for teglon.github
 		 [clojure-http-client "1.1.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.2.1"]]
