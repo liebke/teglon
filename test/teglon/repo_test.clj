@@ -1,6 +1,7 @@
 (ns teglon.repo-test
-  (:require [teglon.repo :as repo])
-  (:require [teglon.db :as db])
+  (:require [teglon.repo :as repo]
+	    [teglon.db :as db]
+	    [clojure.java.io :as io])
   (:use [clojure.test]))
 
 ;; using a snapshot of clojars.org for testing
@@ -15,7 +16,7 @@
   (let [jar-file (.getAbsolutePath (last (repo/list-project-jars "clj-time" "0.1.0-SNAPSHOT")))
 	pom-file (.getAbsolutePath (last (repo/list-project-poms "clj-time" "0.1.0-SNAPSHOT")))]
     (repo/repository-dir "/tmp/teglon/repo/")
-    (repo/add-to-maven-repo jar-file pom-file)
+    (repo/add-to-maven-repo (io/file jar-file) (io/file pom-file))
     (let [model (db/get-model "clj-time" "0.1.0-SNAPSHOT")
 	  project-dir "clj-time/clj-time/0.1.0-SNAPSHOT/"
 	  jar-file-regex (re-pattern

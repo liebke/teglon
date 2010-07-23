@@ -68,7 +68,9 @@
 	   :alt "Teglon"
 	   :class "main-masthead-logo"}]]
    (main-search-form)
-   [:a {:href "/html/models/show"} "Browse Libraries"]])
+   [:ul {:class "main-masthead-links"}
+    [:li [:a {:href "/html/models/show"} "Browse Libraries"]]
+    [:li [:a {:href "/upload"} "Upload Library"]]]])
 
 (defn masthead
   ([] (masthead ""))
@@ -86,6 +88,42 @@
 	(include-css stylesheet)
 	[:body
 	 (main-masthead)]))
+
+(defn upload-file-form []
+  [:div {:class "upload-form"}
+   [:form {:action "/upload"
+	   :method "POST"
+	   :enctype "multipart/form-data"}
+    [:table
+     [:tr
+      [:td (label "pom-file" "pom file")]
+      [:td (file-upload "pom-file")]]
+     [:tr
+      [:td (label "jar-file" "jar file")]
+      [:td (file-upload "jar-file")]]
+     [:tr
+      [:td]
+      [:td (submit-button "Upload files")]]]]])
+
+(defn upload-page
+  ([] (html [:head
+	     [:title "Teglon"]]
+	    (include-css stylesheet)
+	    [:body
+	     (masthead)
+	     (upload-file-form)]))
+  ([model pom-filename jar-filename]
+     (let [{:keys [group name version]} model]
+       (html [:head
+	     [:title "Teglon"]]
+	    (include-css stylesheet)
+	    [:body
+	     (masthead)
+	     (upload-file-form)
+	     [:div {:class "upload-msg"}
+	      [:strong "Success: "]
+	      [:a {:href (model-to-uri model)} group " / " name " / " version]
+	      " added to Teglon."]]))))
 
 (defn list-children [group name]
   (let [children (into #{} (map #(select-keys % [:group :name :uri])

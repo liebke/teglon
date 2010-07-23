@@ -5,12 +5,13 @@
   (:require [teglon.repo :as repo]
 	    [teglon.web.json :as json]
 	    [teglon.web.html :as html]
+	    [teglon.web.upload :as upload]
 	    [compojure.route :as route])
   (:use compojure.core
 	[ring.adapter.jetty :only (run-jetty)]
 	[ring.middleware.file :only (wrap-file)]
-	[ring.middleware.file-info :only (wrap-file-info)]))
-
+	[ring.middleware.file-info :only (wrap-file-info)]
+	[ring.middleware.multipart-params :only (wrap-multipart-params)]))
 
 (defn teglon-app [repo-dir]
   (routes
@@ -46,21 +47,24 @@
    (GET "/repo/*/" [& relative-path]
 	(html/repo-directory-listing (str (relative-path "*") "/")))
    (GET "/" request (html/index-page))
+   (POST "/upload" request (upload/upload-file-to-repo request))
+   (GET "/upload" [] (html/upload-page))
    (route/files "/repo" {:root repo-dir})
    (route/files "/static" {:root "public"})
-   (ANY "*" request {:status 404 :body (html/missing-file request)})
-   (GET "/echo" request (prn-str request))))
+   (GET "/echo" request (prn-str request))
+   (ANY "*" request {:status 404 :body (html/missing-file request)})))
 
 (def *server* (ref nil))
 
 (defn start-server
   ([] (start-server (repo/default-repo-dir)))
   ([repo-dir & [port]]
-     (let [port (or port 8080)]
+     (let [port (or port 8080)
+	   web-app (wrap-multipart-params (teglon-app repo-dir))]
        (println "Initializing Teglon server...")
        (repo/init-repo repo-dir)
        (println (str "Starting webserver on port " port "..."))
-       (dosync (ref-set *server* (run-jetty (teglon-app repo-dir)
+       (dosync (ref-set *server* (run-jetty web-app
 					    {:port port
 					     :join? false})))
        (println "Web server started."))))

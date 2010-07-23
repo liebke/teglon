@@ -31,6 +31,15 @@ body {
     text-align: center;
 }
 
+.main-masthead-links li {
+    padding-right: 1em;
+    display: inline;
+}
+
+.upload-form, .upload-msg {
+    padding-left: 2em;
+}
+
 .main-masthead-logo {
     height: 110px;
     padding-right: 2.5em;
@@ -96,24 +105,6 @@ strong {
     color: SlateGray;
 }
 
-code,
-blockquote,
-pre {
-    font-size: 120%;
-    padding: 1em;
-    border: 1px solid Black;
-    color: Black;
-    background-color: #dedede;
-}
-
-#gallerycomment {
-    text-align: center;
-}
-
-#rss-desc {
-    text-align: right;
-    font-size: smaller;
-}
 
 ul {
     list-style-type: none;

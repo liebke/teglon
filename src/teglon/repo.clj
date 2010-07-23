@@ -17,12 +17,14 @@
      (dosync (ref-set *repository-dir* directory-path))))
 
 (defn add-to-maven-repo [jar-file pom-file]
-  (let [jar-file (io/file jar-file)
-	pom-file (io/file pom-file)
-        model (maven/read-pom pom-file)
+  {:pre [(= (type jar-file) java.io.File)
+	 (= (type pom-file) java.io.File)]}
+  (let [model (maven/read-pom pom-file)
+	model-map (maven/model-to-map model)
 	repo-url (str "file://" (repository-dir))]
     (maven/deploy-model jar-file model repo-url)
-    (db/add-model-map-to-db (maven/model-to-map model))))
+    (db/add-model-map-to-db model-map)
+    model-map))
 
 (defn- list-sub-dirs [directory-name]
   "Not currently used."
