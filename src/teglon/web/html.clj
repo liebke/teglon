@@ -186,7 +186,8 @@
 	    [:ul
 	     [:li [:strong "Description: "]
 	      (if description description "N/A")]
-	     [:li [:strong "Last Updated: "] (repo/project-last-updated model)]
+	     [:li [:strong "Last Updated: "]
+	      (or (repo/project-last-updated model) "N/A")]
 	     [:li [:strong "Authors: "]
 	      (if (seq authors)
 		(apply str (interpose ", " authors))

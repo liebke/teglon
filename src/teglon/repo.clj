@@ -118,7 +118,7 @@
 					   (list-project-poms group
 							      name
 							      version))))]
-       (java.util.Date. pom-last-modified))))
+       (when pom-last-modified (java.util.Date. pom-last-modified)))))
 
 (defn index-repo
   ([] (index-repo (repository-dir)))
