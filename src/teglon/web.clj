@@ -6,7 +6,8 @@
 	    [teglon.web.json :as json]
 	    [teglon.web.html :as html]
 	    [teglon.web.upload :as upload]
-	    [compojure.route :as route])
+	    [compojure.route :as route]
+	    [clojure.contrib.logging :as log])
   (:use compojure.core
 	[ring.adapter.jetty :only (run-jetty)]
 	[ring.middleware.file :only (wrap-file)]
@@ -54,13 +55,22 @@
    (GET "/echo" request (prn-str request))
    (ANY "*" request {:status 404 :body (html/missing-file request)})))
 
+
+(defn wrap-logging [app]
+  (fn [request]
+    (let [{:keys [remote-addr uri query-string]} request]
+      (log/info (str remote-addr " | " uri " | " query-string))
+      (app request))))
+
 (def *server* (ref nil))
 
 (defn start-server
   ([] (start-server (repo/default-repo-dir)))
   ([repo-dir & [port]]
      (let [port (or port 8080)
-	   web-app (wrap-multipart-params (teglon-app repo-dir))]
+	   web-app (-> (teglon-app repo-dir)
+		       wrap-multipart-params
+		       wrap-logging)]
        (println "Initializing Teglon server...")
        (repo/init-repo repo-dir)
        (println (str "Starting webserver on port " port "..."))
