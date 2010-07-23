@@ -108,6 +108,18 @@
      (filter #(.endsWith (.getName %) ".pom")
 	     (list-project-repo-contents group name version))))
 
+(defn project-last-updated
+  ([model]
+     (let [{:keys [group name version]} model]
+       (project-last-updated group name version)))
+  ([group name version]
+     (let [pom-last-modified (first
+			      (sort > (map #(.lastModified %)
+					   (list-project-poms group
+							      name
+							      version))))]
+       (java.util.Date. pom-last-modified))))
+
 (defn index-repo
   ([] (index-repo (repository-dir)))
   ([repo-dir]
