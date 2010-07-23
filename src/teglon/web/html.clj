@@ -96,10 +96,10 @@
 	   :enctype "multipart/form-data"}
     [:table
      [:tr
-      [:td (label "pom-file" "pom file")]
+      [:td (label "pom-file" [:strong "pom file: "])]
       [:td (file-upload "pom-file")]]
      [:tr
-      [:td (label "jar-file" "jar file")]
+      [:td (label "jar-file" [:strong "jar file: "])]
       [:td (file-upload "jar-file")]]
      [:tr
       [:td]
