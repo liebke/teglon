@@ -19,10 +19,10 @@
 
 (defn model-to-uri
   ([model]
-     (model-to-uri *show-model-html-url* model))
-  ([base-url model]
      (let [{:keys [group name version]} model]
-       (str base-url "/" group "/" name "/" version))))
+       (model-to-uri group name version)))
+  ([group name version]
+     (str *show-model-html-url* "/" group "/" name "/" version)))
 
 (defn group-to-uri
   ([group]
@@ -165,46 +165,49 @@
        (let [file-name (.getName f)]
 	 [:li [:a {:href (str project-dir "/" file-name)} file-name]]))]))
 
-(defn model-show [artifact-id]
-  (let [model (apply db/get-model
-		     (util/parse-group-name-version artifact-id))
-	{:keys [group name version description homepage authors]} model
-	artifact-id (str group "/" name "/" version)
-	project-dir (str "/repo/"
-			 (repo/get-project-repo-relative-dir group
-							     name
-							     version))]
-    (html [:head
-	   [:title (str "Teglon: " artifact-id)]
-	   (include-css stylesheet)]
-	  [:body
-	   (masthead)
-	   [:h1 "/ " [:a {:href (group-to-uri group)} group] " / "
-	    [:a {:href (group-name-to-uri group name)} name] " / " version]
-	   [:div {:class "library-details"}
-	    [:h3 "Library Details"]
-	    [:ul
-	     [:li [:strong "Description: "]
-	      (if description description "N/A")]
-	     [:li [:strong "Last Updated: "]
-	      (or (repo/project-last-updated model) "N/A")]
-	     [:li [:strong "Authors: "]
-	      (if (seq authors)
-		(apply str (interpose ", " authors))
-		"N/A")]
-	     [:li [:strong "Homepage: "]
-	      (if homepage
-		[:a {:href homepage} homepage]
-		"N/A")]
-	     [:li [:strong "Dependencies:"] (list-dependencies model)]
-	     [:li [:strong "Projects in repo that use this library:"]
-	      (list-children group name)]]]
-	   [:div {:class "repo-contents"}
-	    [:h3 [:a {:href (str "/repo/" (repo/get-project-repo-relative-dir group name version) "/")}
-		  "Repository Contents"]]
-	    [:ul
-	     [:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
-	     [:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]]])))
+(defn model-show
+  ([artifact-id]
+     (let [[group name version] (util/parse-group-name-version artifact-id)]
+       (model-show group name version)))
+  ([group name version]
+     (let [model (db/get-model group name version)
+	   {:keys [group name version description homepage authors]} model
+	   artifact-id (str group "/" name "/" version)
+	   project-dir (str "/repo/"
+			    (repo/get-project-repo-relative-dir group
+								name
+								version))]
+       (html [:head
+	      [:title (str "Teglon: " artifact-id)]
+	      (include-css stylesheet)]
+	     [:body
+	      (masthead)
+	      [:h1 [:a {:href "/html/models/show"} "repo"] " / " [:a {:href (group-to-uri group)} group] " / "
+	       [:a {:href (group-name-to-uri group name)} name] " / " version]
+	      [:div {:class "library-details"}
+	       [:h3 "Library Details"]
+	       [:ul
+		[:li [:strong "Description: "]
+		 (if description description "N/A")]
+		[:li [:strong "Last Updated: "]
+		 (or (repo/project-last-updated model) "N/A")]
+		[:li [:strong "Authors: "]
+		 (if (seq authors)
+		   (apply str (interpose ", " authors))
+		   "N/A")]
+		[:li [:strong "Homepage: "]
+		 (if homepage
+		   [:a {:href homepage} homepage]
+		   "N/A")]
+		[:li [:strong "Dependencies:"] (list-dependencies model)]
+		[:li [:strong "Projects in repo that use this library:"]
+		 (list-children group name)]]]
+	      [:div {:class "repo-contents"}
+	       [:h3 [:a {:href (str "/repo/" (repo/get-project-repo-relative-dir group name version) "/")}
+		     "Repository Contents"]]
+	       [:ul
+		[:li [:strong "Jar file(s)"] (list-jar-files model project-dir)]
+		[:li [:strong "Pom file(s)"] (list-pom-files model project-dir)]]]]))))
 
 (defn models-search [query]
   (let [results (db/sort-models
@@ -225,10 +228,38 @@
 		       (str group "/" name "/" version)]
 		  [:span {:id "score"} "   (score " score ")"]]))])])))
 
+(defn- list-versions [group name versions]
+  (html
+   [:h1 [:a {:href "/html/models/show"} "repo"] " / " [:a {:href (group-to-uri group)} group] " / " name]
+   [:div {:class "versions"}
+    [:h3 "Versions"]
+    [:ul
+     (for [version versions :when version]
+       (let [{:keys [group name version uri]} version]
+	 [:li [:a {:href uri} version]]))]]))
+
+(defn versions-show
+  ([group-name]
+     (let [[group name] (util/parse-group-name group-name)]
+       (versions-show group name)))
+  ([group name]
+     (let [versions (map add-uri-to-model
+			 (db/list-all-versions-of-model group name))]
+       (if (= 1 (count versions))
+	 {:status 302 :headers {"Location" (model-to-uri group name (:version (first versions)))}}
+	 (html [:head
+		[:title (str "Teglon: " group "/" name)]
+		(include-css stylesheet)]
+	       [:body
+		(masthead)
+		(if (seq versions)
+		  (list-versions group name versions)
+		  [:h2 "Artifacts not found"])])))))
+
 (defn- list-artifacts [group artifacts]
   (let [artifacts (into #{} (map #(select-keys % [:group :name :uri]) artifacts))]
     (html
-     [:h1 "/ " group]
+     [:h1 [:a {:href "/html/models/show"} "repo"] " / " group]
      [:div {:class "libraries"}
       [:h3 "Libraries"]
       [:ul
@@ -239,42 +270,22 @@
 (defn group-show [group]
   (let [artifacts (map (partial add-uri-to-model group-name-to-uri)
 		       (db/list-models-by-group group))]
-    (html [:head
-	   [:title (str "Teglon: " group)]
-	   (include-css stylesheet)]
-	  [:body
-	   (masthead)
-	   (if (seq artifacts)
-	     (list-artifacts group artifacts)
-	     [:h2 "Group not found"])])))
-
-(defn- list-versions [group name versions]
-  (html
-   [:h1 "/ " [:a {:href (group-to-uri group)} group] " / " name]
-   [:div {:class "versions"}
-    [:h3 "Versions"]
-    [:ul
-     (for [version versions :when version]
-       (let [{:keys [group name version uri]} version]
-	 [:li [:a {:href uri} version]]))]]))
-
-(defn versions-show [group-name]
-  (let [[group name] (util/parse-group-name group-name)
-	versions (map add-uri-to-model
-		      (db/list-all-versions-of-model group name))]
-    (html [:head
-	   [:title (str "Teglon: " group "/" name)]
-	   (include-css stylesheet)]
-	  [:body
-	   (masthead)
-	   (if (seq versions)
-	     (list-versions group name versions)
-	     [:h2 "Artifacts not found"])])))
-
+    (cond
+     (= 1 (count (into #{} (map :name artifacts))))
+       {:status 302 :headers {"Location" (group-name-to-uri group (:name (first artifacts)))}}
+      :else
+        (html [:head
+	       [:title (str "Teglon: " group)]
+	       (include-css stylesheet)]
+	      [:body
+	       (masthead)
+	       (if (seq artifacts)
+		 (list-artifacts group artifacts)
+		 [:h2 "Group not found"])]))))
 
 (defn- list-groups [groups]
   (html
-   [:h1 "/ "]
+   [:h1 "repo / "]
    [:div {:class "groups"}
     [:h3 "Groups"]
     [:ul
