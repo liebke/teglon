@@ -318,14 +318,17 @@
 	      (masthead)
 	      [:h1 {:class "dir-list"}
 	       (if relative-path "/repo/" "/repo") relative-path]
-	      [:ul
+	      [:table {:class "dir-list-table"}
+	       [:tr [:th "Name"] [:th "Last Modified"]]
 	       (when relative-path
-		 [:li [:a {:href (str "/repo/" parent-dir)} (str ".. /")]])
-	       (for [f (.listFiles directory-file)]
-		 (let [f-name (.getName f)]
+		 [:tr [:td [:a {:href (str "/repo/" parent-dir)} (str ".. /")]]])
+	       (for [f (.listFiles directory-file) :when f]
+		 (let [f-name (.getName f)
+		       last-modified (.lastModified f)]
 		   (if (.isDirectory f)
-		     [:li [:a {:href (str f-name "/")} (str f-name " /")]]
-		     [:li [:a {:href f-name} f-name]])))]]))))
+		     [:tr [:td [:a {:href (str f-name "/")} (str f-name " /")]]]
+		     [:tr [:td [:a {:href f-name} f-name] " "]
+		          [:td [:span {:class "dir-list-date"} (java.util.Date. last-modified)]]])))]]))))
 
 (defn missing-file [request]
   (html
