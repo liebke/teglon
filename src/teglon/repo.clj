@@ -5,7 +5,8 @@
     (:require [teglon.maven :as maven]
 	      [teglon.db :as db]
 	      [clojure.java.io :as io]
-	      [clojure.string :as s]))
+	      [clojure.string :as s])
+    (:import java.util.Date))
 
 (def *repository-dir* (ref nil))
 
@@ -110,22 +111,20 @@
 
 (defn project-last-updated
   ([model]
-     (let [{:keys [group name version]} model]
-       (project-last-updated group name version)))
-  ([group name version]
-     (let [pom-last-modified (first
-			      (sort > (map #(.lastModified %)
-					   (list-project-poms group
-							      name
-							      version))))]
-       (when pom-last-modified (java.util.Date. pom-last-modified)))))
+     (let [last-modified (:last-modified model)]
+       (when last-modified (Date. last-modified)))))
 
 (defn index-repo
   ([] (index-repo (repository-dir)))
   ([repo-dir]
      (doall
       (doseq [pom-file (list-poms-in-repo repo-dir)]
-	(-> pom-file maven/read-pom maven/model-to-map db/add-model-map-to-db)))))
+	(let [last-modified (.lastModified pom-file)]
+	  (-> pom-file
+	      maven/read-pom
+	      maven/model-to-map
+	      (assoc :last-modified last-modified)
+	      db/add-model-map-to-db))))))
 
 (defn default-repo-dir []
   (str (System/getProperty "user.home")

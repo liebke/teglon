@@ -12,6 +12,9 @@
 		 [compojure "0.4.1"]
 		 [ring "0.2.5"]
                  [hiccup "0.2.6"]
+		 ;; needed for openid
+		 [org.clojars.zef/jopenid "1.05"]
+		 [sandbar/sandbar-session "0.2.4"]
 		 ;; needed for teglon.github
 		 [clojure-http-client "1.1.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.2.1"]]

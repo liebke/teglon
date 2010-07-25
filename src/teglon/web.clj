@@ -6,13 +6,25 @@
 	    [teglon.web.json :as json]
 	    [teglon.web.html :as html]
 	    [teglon.web.upload :as upload]
+	    [teglon.web.openid :as openid]
 	    [compojure.route :as route]
 	    [clojure.contrib.logging :as log])
   (:use compojure.core
 	[ring.adapter.jetty :only (run-jetty)]
 	[ring.middleware.file :only (wrap-file)]
 	[ring.middleware.file-info :only (wrap-file-info)]
-	[ring.middleware.multipart-params :only (wrap-multipart-params)]))
+	[ring.middleware.multipart-params :only (wrap-multipart-params)]
+	;; [ring.middleware.session :only (wrap-session)]
+	;; [ring.middleware.session.cookie :only (cookie-store)]
+	[ring.middleware.cookies :only (wrap-cookies)]
+	[sandbar.stateful-session :only (wrap-stateful-session)]))
+
+;; (defn openid-handler [request]
+;;   (let [counter (or (-> request :session :counter) 1)]
+;;     {:status 200
+;;      :headers {"Content-Type" "text/html"}
+;;      :body (prn-str request)
+;;      :session {:counter (+ 1 counter)}}))
 
 (defn teglon-app [repo-dir]
   (routes
@@ -52,7 +64,10 @@
    (GET "/upload" [] (html/upload-page))
    (route/files "/repo" {:root repo-dir})
    (route/files "/static" {:root "public"})
-   (GET "/echo" request (prn-str request))
+   (GET "/openid" request (openid/openid-handler request))
+   (GET "/echo" request {:status 200
+			 :headers {"Content-Type" "text/html"}
+			 :body (prn-str request)})
    (ANY "*" request {:status 404 :body (html/missing-file request)})))
 
 
@@ -70,7 +85,10 @@
      (let [port (or port 8080)
 	   web-app (-> (teglon-app repo-dir)
 		       wrap-multipart-params
-		       wrap-logging)]
+		       wrap-logging
+		       wrap-cookies
+		       ;; (wrap-session {:store (cookie-store)})
+		       wrap-stateful-session)]
        (println "Initializing Teglon server...")
        (repo/init-repo repo-dir)
        (println (str "Starting webserver on port " port "..."))
